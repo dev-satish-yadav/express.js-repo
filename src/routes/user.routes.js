@@ -6,13 +6,12 @@ const { createUserValidation, updateUserValidation } = require('../validations/u
 const { paginationValidation } = require('../validations/common.validation');
 
 
-// Adding dummy auth middleware inline for demonstration of guarded routes
-const dummyAuth = (req, res, next) => next();
+const { verifyUserToken } = require('../middlewares/user.middleware');
 
 router.post('/create', createUserValidation, validate, userController.create);
 router.post('/login', userController.login);
-router.get('/list', paginationValidation, validate, userController.findAll);
-router.get('/get/:id', dummyAuth, userController.findOne);
-router.patch('/update/:id', dummyAuth, updateUserValidation, validate, userController.update);
+router.get('/list', verifyUserToken, paginationValidation, validate, userController.findAll);
+router.get('/get/:id', verifyUserToken, userController.findOne);
+router.patch('/update/:id', verifyUserToken, updateUserValidation, validate, userController.update);
 
 module.exports = router;

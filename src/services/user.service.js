@@ -1,5 +1,6 @@
 const User = require('../models/user.model');
-const jwt = require('jsonwebtoken');
+const UserToken = require('../models/user-token.model');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sortFilterPagination } = require('../utils/pagination');
 
@@ -18,7 +19,14 @@ class UserService {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error('Invalid email or password');
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+    
+    if (!user.isActive) {
+      throw new Error('Account disabled');
+    }
+
+    const token = crypto.randomBytes(30).toString('hex');
+    await UserToken.create({ userId: user._id, token });
+    
     return { user, token };
   }
 
