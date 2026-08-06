@@ -22,8 +22,8 @@ class UserController {
 
   async findAll(req, res) {
     try {
-      const users = await userService.findAll(req.query);
-      res.status(200).json({ success: true, data: users });
+      const result = await userService.findAll(req.query);
+      res.status(200).json({ success: true, ...result });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }

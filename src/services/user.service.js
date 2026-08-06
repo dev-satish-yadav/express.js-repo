@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { sortFilterPagination } = require('../utils/pagination');
 
 class UserService {
   async create(data) {
@@ -22,7 +23,26 @@ class UserService {
   }
 
   async findAll(query = {}) {
-    return User.find(query);
+    const { page, limit, sort, sort_type, ...filters } = query;
+    const sortData = { _id: '_id', email: 'email', name: 'name' };
+    
+    const totalRecord = await User.countDocuments(filters);
+    const pagination = sortFilterPagination(page, limit, totalRecord, sortData, sort, sort_type);
+    
+    const items = await User.find(filters)
+      .sort(pagination.sort)
+      .skip(pagination.start_from)
+      .limit(pagination.per_page);
+      
+    return {
+      data: items,
+      total_count: totalRecord,
+      prev_enable: pagination.prev_enable,
+      next_enable: pagination.next_enable,
+      total_pages: pagination.total_pages,
+      per_page: pagination.per_page,
+      page: pagination.page
+    };
   }
 
   async findOne(id) {

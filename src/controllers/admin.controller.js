@@ -22,8 +22,8 @@ class AdminController {
 
   async findAll(req, res) {
     try {
-      const admins = await adminService.findAll(req.query);
-      res.status(200).json({ success: true, data: admins });
+      const result = await adminService.findAll(req.query);
+      res.status(200).json({ success: true, ...result });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
     }
