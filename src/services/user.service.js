@@ -3,6 +3,8 @@ const UserToken = require('../models/user-token.model');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sortFilterPagination } = require('../utils/pagination');
+const userCacheService = require('../cache/user-cache.service');
+
 
 class UserService {
   async create(data) {
@@ -26,6 +28,14 @@ class UserService {
 
     const token = crypto.randomBytes(30).toString('hex');
     await UserToken.create({ userId: user._id, token });
+    
+    const userToCache = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isActive: user.isActive,
+    };
+    await userCacheService.addUserToCache(userToCache, token);
     
     return { user, token };
   }

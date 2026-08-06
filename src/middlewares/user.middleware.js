@@ -1,5 +1,6 @@
 const UserToken = require('../models/user-token.model');
 const User = require('../models/user.model');
+const userCacheService = require('../cache/user-cache.service');
 
 const verifyUserToken = async (req, res, next) => {
     try {
@@ -14,13 +15,22 @@ const verifyUserToken = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Not authorized, no token provided' });
         }
 
-        // Find the custom token in the database
+        // 1. Check Redis Cache
+        const cachedUser = await userCacheService.getUserCache(token);
+        if (cachedUser) {
+            if (!cachedUser.isActive) {
+                return res.status(403).json({ success: false, message: 'Account is disabled' });
+            }
+            req.user = cachedUser;
+            return next();
+        }
+
+        // 2. Fallback to Database
         const userToken = await UserToken.findOne({ token });
         if (!userToken) {
             return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
         }
 
-        // Fetch the associated user
         const user = await User.findById(userToken.userId);
         if (!user) {
             return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
@@ -30,7 +40,15 @@ const verifyUserToken = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Account is disabled' });
         }
 
-        // Attach user to request object
+        // 3. Save to Cache for next time
+        const userToCache = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            isActive: user.isActive,
+        };
+        await userCacheService.addUserToCache(userToCache, token);
+
         req.user = user;
         next();
     } catch (error) {
