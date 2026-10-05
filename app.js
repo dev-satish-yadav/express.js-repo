@@ -9,7 +9,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const apiRoutes = require('./src/routes');
-app.use('/api', apiRoutes);
+const { apiLimiter } = require('./src/middlewares/rateLimiter.middleware');
+
+// Apply rate limiting to all /api routes
+app.use('/api', apiLimiter, apiRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
